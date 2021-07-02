@@ -1,0 +1,47 @@
+pipeline {
+    agent {
+        docker {
+            image 'rust:latest'
+        }
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', changelog: false, poll: false, url: 'https://github.com/aeronautical-informatics/openTAWS'
+            }
+        }
+        stage('Install nightly toolchain') {
+            steps {
+                sh "rustup toolchain install nightly"
+                sh "rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu"
+                sh "rustup component add clippy --toolchain nightly-x86_64-unknown-linux-gnu"
+            }
+        }
+        stage('Rustfmt') {
+            steps {
+                sh "cargo +nightly fmt --all -- --check"
+            }
+        }
+        stage('Build') {
+            steps {
+                sh "cargo build"
+            }
+        }
+        stage('Test') {
+            steps {
+                sh "cargo test"
+            }
+        }
+        stage('Clippy') {
+            steps {
+                sh "cargo +nightly clippy --all"
+            }
+        }
+        stage('Doc') {
+            steps {
+                sh "cargo doc"
+            }
+        }
+    }
+}
